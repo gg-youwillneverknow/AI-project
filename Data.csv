@@ -1,4 +1,3 @@
-Initial traffic level N;Initial traffic level E;Initial traffic level W;Green traffic light;Final traffic level N;Final traffic level E;Final traffic level W
 High;High;Low;E;High;High;Low
 High;High;Low;E;High;High;High
 Low;High;Low;E;Low;High;High
