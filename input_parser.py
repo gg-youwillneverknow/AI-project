@@ -1,9 +1,34 @@
+from pickle import FALSE
 import re, sys
 
 pattern = r'((?:(?:High|Low);){3}[ENW]);((?:(?:High|Low);){2}(?:High|Low))'
 
 def main(filename):
 	f = open(filename, "r")
+	transition_table = transition_table(f)
+	states = []
+	for a in ["High", "Low"]:
+		for b in ["High", "Low"]:
+			for c in ["High", "Low"]:
+				states += a+";"+b+";"+c
+	expected_costs = {}
+	policies = {}
+	flag=True
+	while(flag):
+		flag = False
+		for state in states:
+			policy,min = value_iteration(state,transition_table,expected_costs)
+			if expected_costs[state]!=min:
+				expected_costs[state]=min
+				policies[state]=policy
+				flag = True
+	print(policies)
+	print(expected_costs)
+	pass
+
+			
+def transition_table(f):
+	
 	dict={}
 	#do some re and print the output, let's say 5 times
 
@@ -36,10 +61,7 @@ def main(filename):
 			reachable+=[second_key]
 	print(set(reachable))
 	print(set(non_initial))
-	transition_table(dict)
 	print(dict)
-		
-def transition_table(dict):
 	
 	for state in dict: 
 
@@ -48,12 +70,24 @@ def transition_table(dict):
 			dict[state][final_state] = dict[state][final_state] / total
 	return dict
 
-def value_iteration(dict):
-	
+def value_iteration(state,transition_table,expected_costs):
+	min = False
+	policy = False
+	for action in actions(state):
+		value = cost_function(state,action)
+		for final_state in transition_table[state+';'+action]:
+			value += transition_table[state+';'+action][final_state]*expected_costs.get(final_state,0)
+		
+		if bool(min)==False or value<min:
+			min = value 
+			policy = action 
+	return policy,min
 
-	return dict
+def actions(state):
+	return actions
 
 def cost_function(state,action):
 	return 1
+
 if __name__ == "__main__":
 	main(sys.argv[1])
