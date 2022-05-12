@@ -155,6 +155,7 @@ def tracerun_MDP(transition_table,policy,cost_function):
 		MDP_run[initial_state] = (states,cost)
 	return MDP_run
 
+
 if __name__ == "__main__":
 	main(sys.argv[1:], (len(sys.argv) < 2)) #should pass as a boolean
 	
