@@ -44,7 +44,7 @@ def main(argv, do_calc):
 		traffic_data_file = open(argv[0], "r")
 		transition_table = make_transition_table(traffic_data_file)
 		#HERE: save off transition_table as json object
-		with open('transition_table.json','w') as file_object:
+		with open(sys.argv[1],'w') as file_object:
 			json.dump(file_object)
 		#run PIA to compute expected costs and optimal policy
 		has_changed = True
@@ -58,9 +58,9 @@ def main(argv, do_calc):
 					policies[state]=policy
 					has_changed = True
 		#HERE: save off results (expected_costs, policies) as JSON for next time
-		with open('expected_costs.json','w') as file_object:
+		with open(sys.argv[2],'w') as file_object:
 			json.dump(file_object)
-		with open('policies.json','w') as file_object:
+		with open(sys.argv[3],'w') as file_object:
 			json.dump(file_object)
 	else:
 		#HERE: json load in the transition_table, expected_costs, and policies
@@ -156,5 +156,12 @@ def tracerun_MDP(transition_table,policy,cost_function):
 	return MDP_run
 
 if __name__ == "__main__":
-	main(sys.argv[1:], (len(sys.argv) < 2)) #should pass as a boolean
-	
+	#print(len(sys.argv), sys.argv)
+	#DEPRECATED: main(sys.argv[1:], (len(sys.argv) < 3)) #should pass as a boolean
+	if sys.argv[1] == "Create":
+		main(sys.argv[2:], True)
+	elif sys.argv[1] == "Load":
+		main(sys.argv[2:], False)
+	else:
+		print("Run in either Create or Load mode!"
+		exit
