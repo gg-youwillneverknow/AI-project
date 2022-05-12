@@ -2,21 +2,78 @@ import re, sys
 import random
 import json 
 
+#assumptions, problem representation, and initial definitions
 pattern = r'((?:(?:High|Low);){3}[ENW]);((?:(?:High|Low);){2}(?:High|Low))'
-dir = "N"
-for i,filename in enumerate(['transition_table.json','policy.json','expected_costs.json']):
-	#print(filename)
-	file_object = open(filename,'r')
-	if i==0:
-		transition_table = json.load(file_object)
-	if i==1:
-		policy = json.load(file_object)
-	else:
-		expected_costs = json.load(file_object)
 
+lowloop_direction = "N"
+states = []
+def populate_states():
+	global states
+	for i,a in enumerate(["High", "Low"]):
+		for j,b in enumerate(["High", "Low"]):
+			for k,c in enumerate(["High", "Low"]):
+				state= a+";"+b+";"+c
+				states+=[state]
+def actions(state):
+	if state == "Low;Low;Low":
+		return next_loop()
+	else:
+		return ["N","E","W"]
+def next_loop():
+	global lowloop_direction
+	if lowloop_direction=="N":
+		lowloop_direction="E"
+	elif lowloop_direction=="E":
+		lowloop_direction="W"
+	else:
+		lowloop_direction="N"
+	return [lowloop_direction]
+def cost_function(state,action):
+	return 1
+
+#if do_calc, take 0th of argv as filename of input data and compute and save off serialization/json files
+#else, take argv as filenames of [transition_table, expected_costs, policies]
+def main(argv, do_calc):
+	populate_states()
+	transition_table = None
+	expected_costs = {}
+	policies = {}
+	#process input files, either by calculating off of data or reading pre-computations
+	#result: populated transition_table, expected_costs, and policies
+	if do_calc:
+		traffic_data_file = open(argv[0], "r")
+		transition_table = make_transition_table(traffic_data_file)
+		#HERE: save off transition_table as json object
+		with open('transition_table.json','w') as file_object:
+			json.dump(file_object)
+		#run PIA to compute expected costs and optimal policy
+		has_changed = True
+		global states
+		while(has_changed):
+			has_changed = False
+			for state in states:
+				policy,min = value_iteration(state,transition_table,expected_costs)
+				if expected_costs.get(state,0)!=min:
+					expected_costs[state]=min
+					policies[state]=policy
+					has_changed = True
+		#HERE: save off results (expected_costs, policies) as JSON for next time
+		with open('expected_costs.json','w') as file_object:
+			json.dump(file_object)
+		with open('policies.json','w') as file_object:
+			json.dump(file_object)
+	else:
+		#HERE: json load in the transition_table, expected_costs, and policies
+		with open(argv[0]) as file_object:
+			transition_table = json.load(file_object)
+		with open(argv[1]) as file_object:
+			expected_costs = json.load(file_object)
+		with open(argv[2]) as file_object:
+			policies = json.load(file_object)
+	#next, run one simulation/trace from each initial state
+	tracerun_MDP(transition_table, policies, cost_function)
 
 def make_transition_table(f):
-	
 	dict={}
 	#do some re and print the output, let's say 5 times
 
@@ -61,36 +118,7 @@ def make_transition_table(f):
 		json.dump(dict, file_object)
 	return dict
 
-def main(filename):
-	f = open(filename, "r")
-	transition_table = make_transition_table(f)
-	states = []
-	for i,a in enumerate(["High", "Low"]):
-		for j,b in enumerate(["High", "Low"]):
-			for k,c in enumerate(["High", "Low"]):
-				state= a+";"+b+";"+c
-				states+=[state]
-	expected_costs = {}
-	policies = {}
-	flag=True
-	while(flag):
-		flag = False
-		for state in states:
-			policy,min = value_iteration(state,transition_table,expected_costs)
-			if expected_costs.get(state,0)!=min:
-				expected_costs[state]=min
-				policies[state]=policy
-				flag = True
-	filename = 'policy.json'          #use the file extension .json
-	with open(filename, 'w') as file_object:  #open the file in write mode
-		json.dump(policies, file_object)
-	
-	filename = 'expected_costs.json'          #use the file extension .json
-	with open(filename, 'w') as file_object:  #open the file in write mode
-		json.dump(expected_costs, file_object)
-	pass		
-
-
+#perform value- and policy-iteration
 def value_iteration(state,transition_table,expected_costs):
 	min = False
 	policy = False
@@ -106,27 +134,8 @@ def value_iteration(state,transition_table,expected_costs):
 			policy = action 
 	return policy,min
 
-def actions(state):
-	if state == "Low;Low;Low":
-		return next_loop()
-	else:
-		return ["N","E","W"]
-
-def next_loop():
-	global dir
-	if dir=="N":
-		dir="E"
-	elif dir=="E":
-		dir="W"
-	else:
-		dir="N"
-	return [dir]
-
-def cost_function(state,action):
-	return 1
-
-def show_MDP(transition_table,policy,cost_function):
-	MDP={}
+def tracerun_MDP(transition_table,policy,cost_function):
+	MDP_run={}
 	for initial_state in transition_table: 
 		states = []
 		cost = 0 
@@ -143,21 +152,9 @@ def show_MDP(transition_table,policy,cost_function):
 				else:
 					random_number-= prob
 			states.append(next_state)
-		MDP[initial_state] = (states,cost)
-	return MDP
-
-
-def true_pdf(x,transition_table,initial_state):
-    
-	return transition_table[initial_state][x]
-	
-def true_cdf(x,transition_table,initial_state):
-	i = 0 
-	global states
-	prob = 0
-	while states[i]!= x:
-		prob += transition_table[initial_state][states[i]] 
-	return prob 
+		MDP_run[initial_state] = (states,cost)
+	return MDP_run
 
 if __name__ == "__main__":
-	show_MDP(sys.argv[1])
+	main(sys.argv[1:], (len(sys.argv) < 2)) #should pass as a boolean
+	
