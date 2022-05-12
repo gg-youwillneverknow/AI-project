@@ -1,10 +1,19 @@
 import re, sys
 import random
+import json 
 
 pattern = r'((?:(?:High|Low);){3}[ENW]);((?:(?:High|Low);){2}(?:High|Low))'
 dir = "N"
-policy = 0
-cost_function = 0 
+for i,filename in enumerate(['transition_table.json','policy.json','expected_costs.json']):
+	#print(filename)
+	file_object = open(filename,'r')
+	if i==0:
+		transition_table = json.load(file_object)
+	if i==1:
+		policy = json.load(file_object)
+	else:
+		expected_costs = json.load(file_object)
+
 
 def make_transition_table(f):
 	
@@ -47,7 +56,9 @@ def make_transition_table(f):
 		total=sum([dict[state][final_state] for final_state in dict[state]])
 		for final_state in dict[state]:
 			dict[state][final_state] = dict[state][final_state] / total
-	print(dict)
+	filename = 'transition_table.json'          #use the file extension .json
+	with open(filename, 'w') as file_object:  #open the file in write mode
+		json.dump(dict, file_object)
 	return dict
 
 def main(filename):
@@ -59,8 +70,6 @@ def main(filename):
 			for k,c in enumerate(["High", "Low"]):
 				state= a+";"+b+";"+c
 				states+=[state]
-	print('states are',states)
-	
 	expected_costs = {}
 	policies = {}
 	flag=True
@@ -72,9 +81,13 @@ def main(filename):
 				expected_costs[state]=min
 				policies[state]=policy
 				flag = True
-	print(policies)
-	print("")
-	print(expected_costs)
+	filename = 'policy.json'          #use the file extension .json
+	with open(filename, 'w') as file_object:  #open the file in write mode
+		json.dump(policies, file_object)
+	
+	filename = 'expected_costs.json'          #use the file extension .json
+	with open(filename, 'w') as file_object:  #open the file in write mode
+		json.dump(expected_costs, file_object)
 	pass		
 
 
@@ -112,9 +125,6 @@ def next_loop():
 def cost_function(state,action):
 	return 1
 
-if __name__ == "__main__":
-	main(sys.argv[1])
-
 def show_MDP(transition_table,policy,cost_function):
 	MDP={}
 	for initial_state in transition_table: 
@@ -146,6 +156,8 @@ def true_cdf(x,transition_table,initial_state):
 	global states
 	prob = 0
 	while states[i]!= x:
-    	prob += transition_table[initial_state][states[i]] 
+		prob += transition_table[initial_state][states[i]] 
 	return prob 
 
+if __name__ == "__main__":
+	show_MDP(sys.argv[1])
