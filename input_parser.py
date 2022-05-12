@@ -1,9 +1,10 @@
-import enum
-from pickle import FALSE
 import re, sys
+import random
 
 pattern = r'((?:(?:High|Low);){3}[ENW]);((?:(?:High|Low);){2}(?:High|Low))'
 dir = "N"
+policy = 0
+cost_function = 0 
 
 def make_transition_table(f):
 	
@@ -46,6 +47,7 @@ def make_transition_table(f):
 		total=sum([dict[state][final_state] for final_state in dict[state]])
 		for final_state in dict[state]:
 			dict[state][final_state] = dict[state][final_state] / total
+	print(dict)
 	return dict
 
 def main(filename):
@@ -58,6 +60,7 @@ def main(filename):
 				state= a+";"+b+";"+c
 				states+=[state]
 	print('states are',states)
+	
 	expected_costs = {}
 	policies = {}
 	flag=True
@@ -111,3 +114,38 @@ def cost_function(state,action):
 
 if __name__ == "__main__":
 	main(sys.argv[1])
+
+def show_MDP(transition_table,policy,cost_function):
+	MDP={}
+	for initial_state in transition_table: 
+		states = []
+		cost = 0 
+		while next_state!='Low;Low;Low':
+			action = policy[initial_state]
+			cost+=cost_function(initial_state,action)
+			n = len(transition_table[initial_state+";"+action])
+			next_state = 0
+			random_number = random.uniform(0,1)
+			for state in transition_table[initial_state]:
+				prob = transition_table[initial_state][state]
+				if prob >= random_number: 
+					next_state = state
+				else:
+					random_number-= prob
+			states.append(next_state)
+		MDP[initial_state] = (states,cost)
+	return MDP
+
+
+def true_pdf(x,transition_table,initial_state):
+    
+	return transition_table[initial_state][x]
+	
+def true_cdf(x,transition_table,initial_state):
+	i = 0 
+	global states
+	prob = 0
+	while states[i]!= x:
+    	prob += transition_table[initial_state][states[i]] 
+	return prob 
+
