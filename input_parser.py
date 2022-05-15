@@ -29,11 +29,12 @@ def next_loop():
 		lowloop_direction="N"
 	return [lowloop_direction]
 def cost_function(state,action):
-	return 1
+	return 20
 
 #if do_calc, take 0th of argv as filename of input data and compute and save off serialization/json files
 #else, take argv as filenames of [transition_table, expected_costs, policies]
 def main(argv, do_calc):
+	print(argv)
 	populate_states()
 	transition_table = None
 	expected_costs = {}
@@ -44,8 +45,8 @@ def main(argv, do_calc):
 		traffic_data_file = open(argv[0], "r")
 		transition_table = make_transition_table(traffic_data_file)
 		#HERE: save off transition_table as json object
-		with open(sys.argv[1],'w') as file_object:
-			json.dump(file_object)
+		with open(argv[1],'w') as file_object:
+			json.dump(transition_table,file_object)
 		#run PIA to compute expected costs and optimal policy
 		has_changed = True
 		global states
@@ -58,10 +59,10 @@ def main(argv, do_calc):
 					policies[state]=policy
 					has_changed = True
 		#HERE: save off results (expected_costs, policies) as JSON for next time
-		with open(sys.argv[2],'w') as file_object:
-			json.dump(file_object)
-		with open(sys.argv[3],'w') as file_object:
-			json.dump(file_object)
+		with open(argv[2],'w') as file_object:
+			json.dump(expected_costs,file_object)
+		with open(argv[3],'w') as file_object:
+			json.dump(policies,file_object)
 	else:
 		#HERE: json load in the transition_table, expected_costs, and policies
 		with open(argv[0]) as file_object:
@@ -75,12 +76,14 @@ def main(argv, do_calc):
 
 def make_transition_table(f):
 	dict={}
+	
 	#do some re and print the output, let's say 5 times
-
 	for i,s in enumerate(list(f.readlines())):
 		non_initial = []
 		#print(s, end='')
 		m = re.search(pattern, s)
+		if m == None:
+			continue
 		#print(m.group(1) + " " + m.group(2))
 		if m.group(1) not in dict:
 			dict[m.group(1)] = {m.group(2):1}
@@ -135,24 +138,42 @@ def value_iteration(state,transition_table,expected_costs):
 	return policy,min
 
 def tracerun_MDP(transition_table,policy,cost_function):
+	global states
 	MDP_run={}
-	for initial_state in transition_table: 
-		states = []
-		cost = 0 
-		while next_state!='Low;Low;Low':
-			action = policy[initial_state]
-			cost+=cost_function(initial_state,action)
-			n = len(transition_table[initial_state+";"+action])
-			next_state = 0
-			random_number = random.uniform(0,1)
-			for state in transition_table[initial_state]:
-				prob = transition_table[initial_state][state]
-				if prob >= random_number: 
-					next_state = state
-				else:
-					random_number-= prob
-			states.append(next_state)
-		MDP_run[initial_state] = (states,cost)
+	for i in range(30000):
+		for initial_state in states: 
+			visited_states = []
+			cost = 0 
+			next_state = initial_state
+			while next_state!='Low;Low;Low':
+				action = policy[next_state]
+				state_action = next_state+';'+action
+				#print(state_action)
+				cost+=cost_function(next_state,action)
+				random_number = random.uniform(0,1)
+				for state in transition_table[state_action]:
+					#print(state)
+					prob = transition_table[state_action][state]
+					#print(prob)
+					#print(random_number)
+					if prob >= random_number: 
+						next_state = state
+						break	
+					else:
+						random_number-= prob
+					
+				#print(next_state)
+				visited_states.append(next_state)
+			#print(visited_states)
+			MDP_run[initial_state] = MDP_run.get(initial_state,0)+cost
+		#print(i, end=' ')
+		#for state in MDP_run: 
+		#	print(MDP_run[state], end=' ')
+		#print(" ")
+	print('final', end=' ')
+	for state in MDP_run: 
+		MDP_run[state]=MDP_run[state]/30000
+		print(str(state) + ' ' + str(MDP_run[state]), end=' ')
 	return MDP_run
 
 
