@@ -34,6 +34,35 @@ def cost_function(state,action):
 #if do_calc, take 0th of argv as filename of input data and compute and save off serialization/json files
 #else, take argv as filenames of [transition_table, expected_costs, policies]
 def main(argv, do_calc):
+	if argv[0] == "splitdays":
+		if do_calc:
+			days = split_data_day(argv[1])
+			for i,path in enumerate(list(days)):	
+				t = "transition_table" + str(i+1) + '.json'
+				e = "expected_costs" + str(i+1) + '.json'
+				p = "policies" + str(i+1) + '.json'
+				argv = [path] + [t,e,p]		
+				main2(argv,do_calc)
+		else:
+			for i in range(3):	
+				t = "transition_table" + str(i+1) + '.json'
+				e = "expected_costs" + str(i+1) + '.json'
+				p = "policies" + str(i+1) + '.json'
+				argv = [t,e,p]
+				main2(argv,do_calc)
+			
+	else:	
+		t = "transition_table.json"
+		e = "expected_costs.json" 
+		p = "policies.json" 
+		if do_calc:
+			argv = [argv[1]] + [t,e,p]
+		else:
+			argv = [t,e,p]
+		main2(argv, do_calc)
+	return
+		
+def main2(argv, do_calc):
 	print(argv)
 	populate_states()
 	transition_table = None
@@ -176,13 +205,34 @@ def tracerun_MDP(transition_table,policy,cost_function):
 		print(str(state) + ' ' + str(MDP_run[state]), end=' ')
 	return MDP_run
 
-
+def split_data_day(argv):
+    file = open(argv, "r")
+    list_file = file.read().splitlines()
+    m = re.search(pattern, list_file[0])
+    if m == None:
+        list_file=list_file[1:]
+    print(list_file)
+    print(len(list_file))
+    day_1 = list_file[:4230]
+    day_1 = "\n".join(day_1)
+    day_2 = list_file[4230:8460]
+    day_2 = "\n".join(day_2)
+    day_3 = list_file[8460:]
+    day_3 = "\n".join(day_3)
+    file = open('day_1.csv','w')
+    file.write(day_1)
+    file = open('day_2.csv','w')
+    file.write(day_2)
+    file = open('day_3.csv','w')
+    file.write(day_3)
+    return 'day_1.csv','day_2.csv','day_3.csv'
+	
 if __name__ == "__main__":
 	#print(len(sys.argv), sys.argv)
 	#DEPRECATED: main(sys.argv[1:], (len(sys.argv) < 3)) #should pass as a boolean
 	if sys.argv[1] == "Create":
 		main(sys.argv[2:], True)
-	elif sys.argv[1] == "Load":
+	elif sys.argv[1] == "Load":	
 		main(sys.argv[2:], False)
 	else:
 		print("Run in either Create or Load mode!")
