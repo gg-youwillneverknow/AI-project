@@ -4,7 +4,8 @@ import json
 
 #assumptions, problem representation, and initial definitions
 pattern = r'((?:(?:High|Low);){3}[ENW]);((?:(?:High|Low);){2}(?:High|Low))'
-
+cost_mode = "Equal"
+trials = 3000
 lowloop_direction = "N"
 states = []
 def populate_states():
@@ -29,7 +30,22 @@ def next_loop():
 		lowloop_direction="N"
 	return [lowloop_direction]
 def cost_function(state,action):
-	return 20
+	global cost_mode
+	if cost_mode == "Equal":
+		return 20
+	elif cost_mode == "MinTraffic": 
+		n_high = state.count("High")
+		return (4**n_high)-1
+	elif cost_mode == "ImportantE":
+		if state == "Low;High;Low":
+			return 2000
+		elif "High" in state:
+			return 1
+		else:
+			return 0
+	else:
+		print("Configuration failure: cost_mode not recognized")
+		exit()
 
 #if do_calc, take 0th of argv as filename of input data and compute and save off serialization/json files
 #else, take argv as filenames of [transition_table, expected_costs, policies]
@@ -168,8 +184,9 @@ def value_iteration(state,transition_table,expected_costs):
 
 def tracerun_MDP(transition_table,policy,cost_function):
 	global states
+	global trials
 	MDP_run={}
-	for i in range(30000):
+	for i in range(trials):
 		for initial_state in states: 
 			visited_states = []
 			cost = 0 
@@ -201,7 +218,7 @@ def tracerun_MDP(transition_table,policy,cost_function):
 		#print(" ")
 	print('final', end=' ')
 	for state in MDP_run: 
-		MDP_run[state]=MDP_run[state]/30000
+		MDP_run[state]=MDP_run[state]/trials
 		print(str(state) + ' ' + str(MDP_run[state]), end=' ')
 	return MDP_run
 
